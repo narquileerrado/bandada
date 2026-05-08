@@ -1,1104 +1,1582 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> Bandada — SISTEMA DE ENJAMBRE v2.4</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap');
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Bandada — SISTEMA DE ENJAMBRE v2.7</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap");
 
-  :root {
-    --bg:       #0a0a08;
-    --panel:    #111110;
-    --border:   #2a2a24;
-    --accent:   #c8ff00;
-    --accent2:  #ff4400;
-    --accent3:  #00d4ff;
-    --dim:      #444438;
-    --text:     #e0e0cc;
-    --text-dim: #666658;
-    --panel-w:  280px;
-  }
+            :root {
+                --bg: #0a0a08;
+                --panel: #111110;
+                --border: #2a2a24;
+                --accent: #c8ff00;
+                --accent2: #ff4400;
+                --accent3: #00d4ff;
+                --dim: #444438;
+                --text: #e0e0cc;
+                --text-dim: #666658;
+                --panel-w: 280px;
+            }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
 
-  html, body {
-    width: 100%; height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    overflow: hidden;
-  }
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+                background: var(--bg);
+                color: var(--text);
+                font-family: "Share Tech Mono", monospace;
+                overflow: hidden;
+            }
 
-  /* ─── LAYOUT ─── */
-  #app {
-    display: flex;
-    width: 100%; height: 100%;
-  }
+            #app {
+                display: flex;
+                width: 100%;
+                height: 100%;
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
 
-  #canvas-wrap {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
+            #app.collapsed {
+                transform: translateX(var(--panel-w));
+            }
 
-  canvas {
-    display: block;
-    width: 100%; height: 100%;
-    cursor: crosshair;
-  }
+            #canvas-wrap {
+                flex: 1;
+                position: relative;
+                overflow: hidden;
+            }
 
-  /* ─── PANEL ─── */
-  #panel {
-    width: var(--panel-w);
-    min-width: var(--panel-w);
-    background: var(--panel);
-    border-left: 2px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--dim) transparent;
-  }
+            canvas {
+                display: block;
+                width: 100%;
+                height: 100%;
+                cursor: crosshair;
+            }
 
-  #panel-header {
-    padding: 18px 16px 12px;
-    border-bottom: 2px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--panel);
-    z-index: 10;
-  }
+            #panel {
+                width: var(--panel-w);
+                min-width: var(--panel-w);
+                background: var(--panel);
+                border-left: 2px solid var(--border);
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                scrollbar-color: var(--dim) transparent;
+                z-index: 20;
+            }
 
-  .sys-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    line-height: 1;
-    text-shadow: 0 0 20px rgba(200,255,0,0.4);
-  }
+            /* ─── UI ELEMENTS ─── */
+            #panel-toggle {
+                position: absolute;
+                right: 20px;
+                top: 20px;
+                width: 38px;
+                height: 38px;
+                background: var(--panel);
+                border: 1px solid var(--border);
+                color: var(--accent);
+                cursor: pointer;
+                z-index: 100;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                transition: all 0.2s;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            }
+            #panel-toggle:hover {
+                background: var(--border);
+                border-color: var(--accent);
+                color: #fff;
+            }
 
-  .sys-sub {
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    margin-top: 4px;
-  }
+            #panel-header {
+                padding: 18px 16px 12px;
+                border-bottom: 2px solid var(--border);
+                position: sticky;
+                top: 0;
+                background: var(--panel);
+                z-index: 10;
+            }
 
-  .sys-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-  }
+            .sys-title {
+                font-family: "Bebas Neue", sans-serif;
+                font-size: 28px;
+                letter-spacing: 3px;
+                color: var(--accent);
+                line-height: 1;
+                text-shadow: 0 0 20px rgba(200, 255, 0, 0.4);
+            }
+            .sys-sub {
+                font-size: 9px;
+                color: var(--text-dim);
+                letter-spacing: 2px;
+                margin-top: 4px;
+            }
+            .sys-status {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 10px;
+                font-size: 9px;
+                color: var(--text-dim);
+                letter-spacing: 1px;
+            }
+            .status-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--accent);
+                box-shadow: 0 0 6px var(--accent);
+                animation: pulse 2s ease-in-out infinite;
+            }
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.3;
+                }
+            }
 
-  .status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px var(--accent);
-    animation: pulse 2s ease-in-out infinite;
-  }
+            .section {
+                border-bottom: 1px solid var(--border);
+                padding: 14px 16px;
+            }
+            .section-label {
+                font-size: 9px;
+                letter-spacing: 3px;
+                color: var(--text-dim);
+                margin-bottom: 12px;
+                text-transform: uppercase;
+            }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
-  }
+            .ctrl {
+                margin-bottom: 14px;
+            }
+            .ctrl:last-child {
+                margin-bottom: 0;
+            }
+            .ctrl-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin-bottom: 5px;
+            }
+            .ctrl-name {
+                font-size: 10px;
+                color: var(--text);
+                letter-spacing: 1px;
+            }
+            .ctrl-val {
+                font-size: 11px;
+                color: var(--accent);
+                min-width: 36px;
+                text-align: right;
+            }
 
-  /* ─── SECTIONS ─── */
-  .section {
-    border-bottom: 1px solid var(--border);
-    padding: 14px 16px;
-  }
+            input[type="range"] {
+                -webkit-appearance: none;
+                width: 100%;
+                height: 2px;
+                background: var(--border);
+                outline: none;
+                cursor: pointer;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                width: 14px;
+                height: 14px;
+                background: var(--accent);
+                border: 2px solid var(--bg);
+                clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+                cursor: pointer;
+                transition: transform 0.1s;
+            }
+            input[type="range"]::-webkit-slider-thumb:hover {
+                transform: scale(1.3);
+            }
 
-  .section-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-    text-transform: uppercase;
-  }
+            .toggle-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+            .toggle-label {
+                font-size: 10px;
+                color: var(--text);
+                letter-spacing: 1px;
+            }
+            .toggle {
+                position: relative;
+                width: 36px;
+                height: 18px;
+                cursor: pointer;
+            }
+            .toggle input {
+                display: none;
+            }
+            .toggle-track {
+                position: absolute;
+                inset: 0;
+                background: var(--border);
+                border: 1px solid var(--dim);
+                transition: background 0.2s;
+            }
+            .toggle input:checked ~ .toggle-track {
+                background: var(--accent);
+            }
+            .toggle-thumb {
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                width: 10px;
+                height: 10px;
+                background: var(--bg);
+                transition: transform 0.2s;
+                pointer-events: none;
+            }
+            .toggle input:checked ~ .toggle-thumb {
+                transform: translateX(18px);
+            }
 
-  /* ─── SLIDERS ─── */
-  .ctrl {
-    margin-bottom: 14px;
-  }
+            .mode-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .mode-btn {
+                flex: 1;
+                padding: 7px 4px;
+                background: transparent;
+                border: 1px solid var(--border);
+                color: var(--text-dim);
+                font-family: "Share Tech Mono", monospace;
+                font-size: 9px;
+                letter-spacing: 1px;
+                cursor: pointer;
+                transition: all 0.15s;
+                text-align: center;
+                min-width: 60px;
+            }
+            .mode-btn.active {
+                border-color: var(--accent3);
+                color: var(--accent3);
+                background: rgba(0, 212, 255, 0.08);
+                box-shadow: inset 0 0 8px rgba(0, 212, 255, 0.1);
+            }
+            .mode-btn:hover:not(.active) {
+                border-color: var(--dim);
+                color: var(--text);
+            }
 
-  .ctrl:last-child { margin-bottom: 0; }
+            .preset-btn {
+                border-color: var(--accent);
+                color: var(--accent);
+                font-size: 8px;
+                text-transform: uppercase;
+            }
+            .preset-btn:hover {
+                background: rgba(200, 255, 0, 0.1);
+                color: #fff;
+            }
 
-  .ctrl-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 5px;
-  }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .stat-box {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                padding: 8px;
+            }
+            .stat-label {
+                font-size: 8px;
+                color: var(--text-dim);
+                letter-spacing: 2px;
+                display: block;
+                margin-bottom: 3px;
+            }
+            .stat-value {
+                font-size: 16px;
+                font-family: "Bebas Neue", sans-serif;
+                color: var(--accent);
+                letter-spacing: 1px;
+                line-height: 1;
+            }
 
-  .ctrl-name {
-    font-size: 10px;
-    color: var(--text);
-    letter-spacing: 1px;
-  }
+            .action-row {
+                display: flex;
+                gap: 8px;
+                margin-top: 4px;
+                flex-wrap: wrap;
+            }
+            .action-btn {
+                flex: 1;
+                padding: 11px;
+                background: transparent;
+                border: 1px solid;
+                font-family: "Share Tech Mono", monospace;
+                font-size: 10px;
+                letter-spacing: 2px;
+                cursor: pointer;
+                transition: all 0.15s;
+                text-transform: uppercase;
+                min-width: 110px;
+            }
+            #btn-reset {
+                border-color: var(--accent2);
+                color: var(--accent2);
+            }
+            #btn-reset:hover {
+                background: var(--accent2);
+                color: var(--bg);
+                box-shadow: 0 0 20px rgba(255, 68, 0, 0.3);
+            }
+            #btn-export {
+                border-color: var(--accent3);
+                color: var(--accent3);
+            }
+            #btn-export:hover {
+                background: var(--accent3);
+                color: var(--bg);
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            }
+            #btn-random {
+                border-color: var(--accent);
+                color: var(--accent);
+            }
+            #btn-random:hover {
+                background: var(--accent);
+                color: var(--bg);
+                box-shadow: 0 0 20px rgba(200, 255, 0, 0.3);
+            }
 
-  .ctrl-val {
-    font-size: 11px;
-    color: var(--accent);
-    min-width: 36px;
-    text-align: right;
-  }
+            #canvas-wrap::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                z-index: 5;
+                background: repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.07) 2px,
+                    rgba(0, 0, 0, 0.07) 4px
+                );
+            }
 
-  input[type=range] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 2px;
-    background: var(--border);
-    outline: none;
-    cursor: pointer;
-  }
+            .corner {
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                pointer-events: none;
+                z-index: 6;
+            }
+            .corner::before,
+            .corner::after {
+                content: "";
+                position: absolute;
+                background: var(--accent);
+                opacity: 0.5;
+            }
+            .corner::before {
+                width: 100%;
+                height: 1px;
+            }
+            .corner::after {
+                width: 1px;
+                height: 100%;
+            }
+            .corner.tl {
+                top: 10px;
+                left: 10px;
+            }
+            .corner.tr {
+                top: 10px;
+                right: 10px;
+                transform: scaleX(-1);
+            }
+            .corner.bl {
+                bottom: 10px;
+                left: 10px;
+                transform: scaleY(-1);
+            }
+            .corner.br {
+                bottom: 10px;
+                right: 10px;
+                transform: scale(-1);
+            }
 
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px; height: 14px;
-    background: var(--accent);
-    border: 2px solid var(--bg);
-    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
+            #coords {
+                position: absolute;
+                bottom: 14px;
+                left: 16px;
+                font-size: 9px;
+                color: rgba(200, 255, 0, 0.35);
+                letter-spacing: 2px;
+                pointer-events: none;
+                z-index: 6;
+                font-family: "Share Tech Mono", monospace;
+            }
+            #mouse-mode-hud {
+                position: absolute;
+                top: 14px;
+                left: 16px;
+                font-size: 9px;
+                color: var(--accent3);
+                letter-spacing: 2px;
+                pointer-events: none;
+                z-index: 6;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
 
-  input[type=range]::-webkit-slider-thumb:hover {
-    transform: scale(1.3);
-  }
+            #toast {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                background: var(--panel);
+                border: 1px solid var(--accent3);
+                color: var(--accent3);
+                padding: 10px 20px;
+                font-size: 10px;
+                letter-spacing: 2px;
+                transform: translateY(100px);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 200;
+            }
+            #toast.show {
+                transform: translateY(0);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div id="canvas-wrap">
+                <button id="panel-toggle" title="Contraer/Expandir Panel">
+                    »
+                </button>
+                <canvas id="c"></canvas>
+                <div class="corner tl"></div>
+                <div class="corner tr"></div>
+                <div class="corner bl"></div>
+                <div class="corner br"></div>
+                <div id="coords">X:0000 Y:0000</div>
+                <div id="mouse-mode-hud">[ MOUSE ACTIVE ]</div>
+                <div id="toast">MENSAJE DEL SISTEMA</div>
+            </div>
 
-  input[type=range]::-moz-range-thumb {
-    width: 12px; height: 12px;
-    background: var(--accent);
-    border: 2px solid var(--bg);
-    cursor: pointer;
-    border-radius: 0;
-  }
+            <div id="panel">
+                <div id="panel-header">
+                    <div class="sys-title">Bandada</div>
+                    <div class="sys-sub">
+                        SISTEMA DE ENJAMBRE v2.7 // BOIDS ENGINE
+                    </div>
+                    <div class="sys-status">
+                        <div class="status-dot"></div>
+                        <span id="status-text">SIMULACIÓN ACTIVA</span>
+                    </div>
+                </div>
 
-  /* ─── TOGGLES ─── */
-  .toggle-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
+                <!-- STATS -->
+                <div class="section">
+                    <div class="section-label">// TELEMETRÍA</div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-label">AGENTES</span
+                            ><span class="stat-value" id="st-count">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">FPS</span
+                            ><span class="stat-value" id="st-fps">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">VEL MEDIA</span
+                            ><span class="stat-value" id="st-vel">0.0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">OBSTÁCULOS</span
+                            ><span class="stat-value" id="st-obs">0</span>
+                        </div>
+                    </div>
+                </div>
 
-  .toggle-row:last-child { margin-bottom: 0; }
+                <!-- PRESETS -->
+                <div class="section">
+                    <div class="section-label">// PRESETS DE SISTEMA</div>
+                    <div class="mode-row">
+                        <button class="mode-btn preset-btn" data-preset="storm">
+                            TORMENTA
+                        </button>
+                        <button class="mode-btn preset-btn" data-preset="lazy">
+                            PEREZOSO
+                        </button>
+                        <button class="mode-btn preset-btn" data-preset="chaos">
+                            CAOS
+                        </button>
+                        <button class="mode-btn preset-btn" data-preset="swarm">
+                            ENJAMBRE
+                        </button>
+                    </div>
+                </div>
 
-  .toggle-label {
-    font-size: 10px;
-    color: var(--text);
-    letter-spacing: 1px;
-  }
+                <!-- SIMULACION TIEMPO -->
+                <div class="section">
+                    <div class="section-label">// SIMULACIÓN</div>
+                    <div class="mode-row" style="margin-bottom: 14px">
+                        <button class="mode-btn active" id="btn-play">
+                            PLAY
+                        </button>
+                        <button class="mode-btn" id="btn-pause">PAUSA</button>
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">ESCALA DE TIEMPO</span
+                            ><span class="ctrl-val" id="v-time">1.0</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-time"
+                            min="0.1"
+                            max="2.5"
+                            value="1.0"
+                            step="0.1"
+                        />
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">ESPACIO TOROIDAL</span>
+                        <label class="toggle"
+                            ><input type="checkbox" id="t-toroidal" />
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div
+                        ></label>
+                    </div>
+                </div>
 
-  .toggle {
-    position: relative;
-    width: 36px; height: 18px;
-    cursor: pointer;
-  }
+                <!-- POBLACIÓN -->
+                <div class="section">
+                    <div class="section-label">// POBLACIÓN</div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">AGENTES</span
+                            ><span class="ctrl-val" id="v-count">200</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-count"
+                            min="20"
+                            max="600"
+                            value="200"
+                            step="10"
+                        />
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">ESPECIES</span
+                            ><span class="ctrl-val" id="v-species">1</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-species"
+                            min="1"
+                            max="4"
+                            value="1"
+                            step="1"
+                        />
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">VEL MÁXIMA</span
+                            ><span class="ctrl-val" id="v-speed">3.0</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-speed"
+                            min="0.5"
+                            max="8"
+                            value="3"
+                            step="0.1"
+                        />
+                    </div>
+                </div>
 
-  .toggle input { display: none; }
+                <!-- REGLAS BOID -->
+                <div class="section">
+                    <div class="section-label">// REGLAS DE COHESIÓN</div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">SEPARACIÓN</span
+                            ><span class="ctrl-val" id="v-sep">1.5</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-sep"
+                            min="0"
+                            max="5"
+                            value="1.5"
+                            step="0.05"
+                        />
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">ALINEACIÓN</span
+                            ><span class="ctrl-val" id="v-ali">1.0</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-ali"
+                            min="0"
+                            max="5"
+                            value="1.0"
+                            step="0.05"
+                        />
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">COHESIÓN</span
+                            ><span class="ctrl-val" id="v-coh">1.0</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-coh"
+                            min="0"
+                            max="5"
+                            value="1.0"
+                            step="0.05"
+                        />
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">RADIO VISIÓN</span
+                            ><span class="ctrl-val" id="v-rad">80</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-rad"
+                            min="20"
+                            max="200"
+                            value="80"
+                            step="5"
+                        />
+                    </div>
+                </div>
 
-  .toggle-track {
-    position: absolute;
-    inset: 0;
-    background: var(--border);
-    border: 1px solid var(--dim);
-    transition: background 0.2s;
-  }
+                <!-- PREDADORES -->
+                <div class="section">
+                    <div class="section-label">// PREDADORES</div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">CANTIDAD</span
+                            ><span class="ctrl-val" id="v-pcount">1</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-pcount"
+                            min="0"
+                            max="5"
+                            value="1"
+                            step="1"
+                        />
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">VEL PREDADOR</span
+                            ><span class="ctrl-val" id="v-pspeed">4.0</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-pspeed"
+                            min="1"
+                            max="10"
+                            value="4"
+                            step="0.1"
+                        />
+                    </div>
+                </div>
 
-  .toggle input:checked ~ .toggle-track {
-    background: var(--accent);
-  }
+                <!-- MOUSE -->
+                <div class="section">
+                    <div class="section-label">// INTERACCIÓN MOUSE</div>
+                    <div class="mode-row">
+                        <button class="mode-btn active" data-mode="none">
+                            NADA
+                        </button>
+                        <button class="mode-btn" data-mode="attract">
+                            ATRAER
+                        </button>
+                        <button class="mode-btn" data-mode="repel">
+                            REPEL.
+                        </button>
+                        <button class="mode-btn" data-mode="obstacle">
+                            OBSTÁC.
+                        </button>
+                    </div>
+                    <button
+                        id="btn-clear-obs"
+                        class="mode-btn"
+                        style="width: 100%; margin-top: 8px"
+                    >
+                        LIMPIAR OBSTÁCULOS
+                    </button>
+                </div>
 
-  .toggle-thumb {
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 10px; height: 10px;
-    background: var(--bg);
-    transition: transform 0.2s;
-    pointer-events: none;
-  }
+                <!-- VISUAL -->
+                <div class="section">
+                    <div class="section-label">// VISUAL</div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">MOSTRAR ESTELA</span>
+                        <label class="toggle"
+                            ><input type="checkbox" id="t-trail" checked />
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div
+                        ></label>
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">LARGO ESTELA</span
+                            ><span class="ctrl-val" id="v-tlen">12</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-tlen"
+                            min="2"
+                            max="40"
+                            value="12"
+                            step="1"
+                        />
+                    </div>
+                    <div class="ctrl" style="margin-top: 10px">
+                        <div class="ctrl-row">
+                            <span class="ctrl-name">OPACIDAD ESTELA</span
+                            ><span class="ctrl-val" id="v-fade">0.08</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="s-fade"
+                            min="0.01"
+                            max="0.4"
+                            value="0.08"
+                            step="0.01"
+                        />
+                    </div>
+                </div>
 
-  .toggle input:checked ~ .toggle-thumb {
-    transform: translateX(18px);
-  }
-
-  /* ─── MOUSE MODE ─── */
-  .mode-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 0;
-  }
-
-  .mode-btn {
-    flex: 1;
-    padding: 7px 4px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-  }
-
-  .mode-btn.active {
-    border-color: var(--accent3);
-    color: var(--accent3);
-    background: rgba(0,212,255,0.08);
-    box-shadow: inset 0 0 8px rgba(0,212,255,0.1);
-  }
-
-  .mode-btn:hover:not(.active) {
-    border-color: var(--dim);
-    color: var(--text);
-  }
-
-  /* ─── STATS ─── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .stat-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    padding: 8px;
-  }
-
-  .stat-label {
-    font-size: 8px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    display: block;
-    margin-bottom: 3px;
-  }
-
-  .stat-value {
-    font-size: 16px;
-    font-family: 'Bebas Neue', sans-serif;
-    color: var(--accent);
-    letter-spacing: 1px;
-    line-height: 1;
-  }
-
-  /* ─── RESET BTN ─── */
-  #btn-reset {
-    width: 100%;
-    padding: 11px;
-    background: transparent;
-    border: 1px solid var(--accent2);
-    color: var(--accent2);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 3px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-transform: uppercase;
-  }
-
-  #btn-reset:hover {
-    background: var(--accent2);
-    color: var(--bg);
-    box-shadow: 0 0 20px rgba(255,68,0,0.3);
-  }
-
-  /* ─── SCANLINES OVERLAY ─── */
-  #canvas-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.07) 2px,
-      rgba(0,0,0,0.07) 4px
-    );
-    pointer-events: none;
-    z-index: 5;
-  }
-
-  /* ─── CORNER MARKS ─── */
-  .corner {
-    position: absolute;
-    width: 20px; height: 20px;
-    pointer-events: none;
-    z-index: 6;
-  }
-
-  .corner::before, .corner::after {
-    content: '';
-    position: absolute;
-    background: var(--accent);
-    opacity: 0.5;
-  }
-
-  .corner::before { width: 100%; height: 1px; }
-  .corner::after  { width: 1px; height: 100%; }
-
-  .corner.tl { top: 10px; left: 10px; }
-  .corner.tr { top: 10px; right: 10px; transform: scaleX(-1); }
-  .corner.bl { bottom: 10px; left: 10px; transform: scaleY(-1); }
-  .corner.br { bottom: 10px; right: 10px; transform: scale(-1); }
-
-  /* ─── COORD DISPLAY ─── */
-  #coords {
-    position: absolute;
-    bottom: 14px;
-    left: 16px;
-    font-size: 9px;
-    color: rgba(200,255,0,0.35);
-    letter-spacing: 2px;
-    pointer-events: none;
-    z-index: 6;
-    font-family: 'Share Tech Mono', monospace;
-  }
-
-  #mouse-mode-hud {
-    position: absolute;
-    top: 14px;
-    left: 16px;
-    font-size: 9px;
-    color: var(--accent3);
-    letter-spacing: 2px;
-    pointer-events: none;
-    z-index: 6;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-</style>
-</head>
-<body>
-<div id="app">
-  <div id="canvas-wrap">
-    <canvas id="c"></canvas>
-    <div class="corner tl"></div>
-    <div class="corner tr"></div>
-    <div class="corner bl"></div>
-    <div class="corner br"></div>
-    <div id="coords">X:0000 Y:0000</div>
-    <div id="mouse-mode-hud">[ MOUSE ACTIVE ]</div>
-  </div>
-
-  <div id="panel">
-    <div id="panel-header">
-      <div class="sys-title">Bandada</div>
-      <div class="sys-sub">SISTEMA DE ENJAMBRE v2.4 // BOIDS ENGINE</div>
-      <div class="sys-status">
-        <div class="status-dot"></div>
-        <span id="status-text">SIMULACIÓN ACTIVA</span>
-      </div>
-    </div>
-
-    <!-- STATS -->
-    <div class="section">
-      <div class="section-label">// TELEMETRÍA</div>
-      <div class="stats-grid">
-        <div class="stat-box">
-          <span class="stat-label">AGENTES</span>
-          <span class="stat-value" id="st-count">0</span>
+                <!-- ACCIONES -->
+                <div class="section">
+                    <div class="action-row">
+                        <button id="btn-reset" class="action-btn">
+                            ⟳ REINICIAR
+                        </button>
+                        <button id="btn-export" class="action-btn">
+                            ⎙ EXPORTAR
+                        </button>
+                        <button id="btn-random" class="action-btn">
+                            🎲 AZAR
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="stat-box">
-          <span class="stat-label">FPS</span>
-          <span class="stat-value" id="st-fps">0</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">VEL MEDIA</span>
-          <span class="stat-value" id="st-vel">0.0</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">GRUPOS</span>
-          <span class="stat-value" id="st-clusters">—</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- POBLACIÓN -->
-    <div class="section">
-      <div class="section-label">// POBLACIÓN</div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">AGENTES</span>
-          <span class="ctrl-val" id="v-count">200</span>
-        </div>
-        <input type="range" id="s-count" min="20" max="600" value="200" step="10">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">VEL MÁXIMA</span>
-          <span class="ctrl-val" id="v-speed">3.0</span>
-        </div>
-        <input type="range" id="s-speed" min="0.5" max="8" value="3" step="0.1">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">TAMAÑO</span>
-          <span class="ctrl-val" id="v-size">7</span>
-        </div>
-        <input type="range" id="s-size" min="3" max="18" value="7" step="1">
-      </div>
-    </div>
-
-    <!-- REGLAS BOID -->
-    <div class="section">
-      <div class="section-label">// REGLAS DE COHESIÓN</div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">SEPARACIÓN</span>
-          <span class="ctrl-val" id="v-sep">1.5</span>
-        </div>
-        <input type="range" id="s-sep" min="0" max="5" value="1.5" step="0.05">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">ALINEACIÓN</span>
-          <span class="ctrl-val" id="v-ali">1.0</span>
-        </div>
-        <input type="range" id="s-ali" min="0" max="5" value="1.0" step="0.05">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">COHESIÓN</span>
-          <span class="ctrl-val" id="v-coh">1.0</span>
-        </div>
-        <input type="range" id="s-coh" min="0" max="5" value="1.0" step="0.05">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">RADIO VISIÓN</span>
-          <span class="ctrl-val" id="v-rad">80</span>
-        </div>
-        <input type="range" id="s-rad" min="20" max="200" value="80" step="5">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">RADIO SEPARACIÓN</span>
-          <span class="ctrl-val" id="v-srad">30</span>
-        </div>
-        <input type="range" id="s-srad" min="5" max="80" value="30" step="1">
-      </div>
-    </div>
-
-    <!-- PREDADOR -->
-    <div class="section">
-      <div class="section-label">// PREDADOR</div>
-      <div class="toggle-row">
-        <span class="toggle-label">ACTIVAR PREDADOR</span>
-        <label class="toggle">
-          <input type="checkbox" id="t-pred" checked>
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-      <div class="ctrl" style="margin-top:12px">
-        <div class="ctrl-row">
-          <span class="ctrl-name">VEL PREDADOR</span>
-          <span class="ctrl-val" id="v-pspeed">4.0</span>
-        </div>
-        <input type="range" id="s-pspeed" min="1" max="10" value="4" step="0.1">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-row">
-          <span class="ctrl-name">RADIO HUIDA</span>
-          <span class="ctrl-val" id="v-pfear">120</span>
-        </div>
-        <input type="range" id="s-pfear" min="40" max="250" value="120" step="5">
-      </div>
-    </div>
-
-    <!-- MOUSE -->
-    <div class="section">
-      <div class="section-label">// INTERACCIÓN MOUSE</div>
-      <div class="mode-row">
-        <button class="mode-btn active" data-mode="none">NINGUNO</button>
-        <button class="mode-btn" data-mode="attract">ATRAER</button>
-        <button class="mode-btn" data-mode="repel">REPELER</button>
-      </div>
-      <div class="ctrl" style="margin-top:12px">
-        <div class="ctrl-row">
-          <span class="ctrl-name">FUERZA MOUSE</span>
-          <span class="ctrl-val" id="v-mforce">2.0</span>
-        </div>
-        <input type="range" id="s-mforce" min="0.5" max="8" value="2" step="0.1">
-      </div>
-    </div>
-
-    <!-- VISUAL -->
-    <div class="section">
-      <div class="section-label">// VISUAL</div>
-      <div class="toggle-row">
-        <span class="toggle-label">MOSTRAR ESTELA</span>
-        <label class="toggle">
-          <input type="checkbox" id="t-trail" checked>
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-      <div class="toggle-row">
-        <span class="toggle-label">MOSTRAR RADIO</span>
-        <label class="toggle">
-          <input type="checkbox" id="t-radius">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-      <div class="ctrl" style="margin-top:10px">
-        <div class="ctrl-row">
-          <span class="ctrl-name">OPACIDAD ESTELA</span>
-          <span class="ctrl-val" id="v-fade">0.08</span>
-        </div>
-        <input type="range" id="s-fade" min="0.01" max="0.4" value="0.08" step="0.01">
-      </div>
-    </div>
-
-    <!-- RESET -->
-    <div class="section">
-      <button id="btn-reset">⟳ REINICIAR</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// ─── CONFIG ───────────────────────────────────────────────
-const cfg = {
-  count:   200,
-  speed:   3.0,
-  size:    7,
-  sep:     1.5,
-  ali:     1.0,
-  coh:     1.0,
-  rad:     80,
-  srad:    30,
-  pspeed:  4.0,
-  pfear:   120,
-  mforce:  2.0,
-  fade:    0.08,
-  predOn:  true,
-  trail:   true,
-  radius:  false,
-  mouseMode: 'none',
-};
-
-// ─── CANVAS SETUP ─────────────────────────────────────────
-const canvas = document.getElementById('c');
-const ctx    = canvas.getContext('2d');
-let W, H;
-
-function resize() {
-  const wrap = canvas.parentElement;
-  W = canvas.width  = wrap.clientWidth;
-  H = canvas.height = wrap.clientHeight;
-}
-resize();
-window.addEventListener('resize', () => { resize(); });
-
-// ─── BOIDS DATA (Typed Arrays for perf) ───────────────────
-let boids = [];
-
-class Boid {
-  constructor() {
-    this.x  = Math.random() * W;
-    this.y  = Math.random() * H;
-    const a = Math.random() * Math.PI * 2;
-    const s = cfg.speed * (0.6 + Math.random() * 0.8);
-    this.vx = Math.cos(a) * s;
-    this.vy = Math.sin(a) * s;
-    this.trail = []; // [{x,y}]
-    this.speed = 0;
-  }
-}
-
-// ─── PREDATOR ─────────────────────────────────────────────
-const pred = { x: -999, y: -999, vx: 0, vy: 0, trail: [] };
-
-function initBoids() {
-  boids = [];
-  for (let i = 0; i < cfg.count; i++) boids.push(new Boid());
-  pred.x = W / 2; pred.y = H / 2;
-  pred.vx = cfg.pspeed; pred.vy = 0;
-  pred.trail = [];
-}
-initBoids();
-
-// ─── MOUSE ────────────────────────────────────────────────
-const mouse = { x: -9999, y: -9999, inside: false };
-canvas.addEventListener('mousemove', e => {
-  const r = canvas.getBoundingClientRect();
-  mouse.x = (e.clientX - r.left) * (W / r.width);
-  mouse.y = (e.clientY - r.top)  * (H / r.height);
-  mouse.inside = true;
-  document.getElementById('coords').textContent =
-    `X:${String(Math.floor(mouse.x)).padStart(4,'0')} Y:${String(Math.floor(mouse.y)).padStart(4,'0')}`;
-  if (cfg.mouseMode !== 'none') {
-    document.getElementById('mouse-mode-hud').style.opacity = '1';
-  }
-});
-canvas.addEventListener('mouseleave', () => {
-  mouse.inside = false;
-  mouse.x = -9999; mouse.y = -9999;
-  document.getElementById('mouse-mode-hud').style.opacity = '0';
-});
-
-// ─── SPATIAL GRID ─────────────────────────────────────────
-let grid = new Map();
-let cellSize = 0;
-
-function buildGrid() {
-  grid.clear();
-  cellSize = Math.max(cfg.rad, cfg.srad) + 1;
-  for (let i = 0; i < boids.length; i++) {
-    const b  = boids[i];
-    const cx = Math.floor(b.x / cellSize);
-    const cy = Math.floor(b.y / cellSize);
-    const k  = cx + ',' + cy;
-    if (!grid.has(k)) grid.set(k, []);
-    grid.get(k).push(i);
-  }
-}
-
-function getNeighbors(b, radius) {
-  const result = [];
-  const cx = Math.floor(b.x / cellSize);
-  const cy = Math.floor(b.y / cellSize);
-  const range = Math.ceil(radius / cellSize);
-  const r2 = radius * radius;
-  for (let dx = -range; dx <= range; dx++) {
-    for (let dy = -range; dy <= range; dy++) {
-      const k = (cx+dx) + ',' + (cy+dy);
-      const cell = grid.get(k);
-      if (!cell) continue;
-      for (const idx of cell) {
-        const n  = boids[idx];
-        const ex = n.x - b.x, ey = n.y - b.y;
-        if (ex*ex + ey*ey < r2) result.push(n);
-      }
-    }
-  }
-  return result;
-}
-
-// ─── VELOCITY COLOR ───────────────────────────────────────
-// slow → cyan, mid → lime-yellow, fast → orange-red
-function velColor(speed, maxSpeed, alpha) {
-  const t = Math.min(speed / maxSpeed, 1);
-  let r, g, b;
-  if (t < 0.5) {
-    const u = t * 2;
-    r = Math.floor(0   + u * 200);
-    g = Math.floor(212 + u * 43);
-    b = Math.floor(255 - u * 255);
-  } else {
-    const u = (t - 0.5) * 2;
-    r = Math.floor(200 + u * 55);
-    g = Math.floor(255 - u * 200);
-    b = 0;
-  }
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-// ─── DRAW TRIANGLE ────────────────────────────────────────
-function drawBoid(b, size) {
-  const angle  = Math.atan2(b.vy, b.vx);
-  const speed  = Math.hypot(b.vx, b.vy);
-  const col    = velColor(speed, cfg.speed * 1.5, 1);
-  const colDim = velColor(speed, cfg.speed * 1.5, 0.3);
-
-  ctx.save();
-  ctx.translate(b.x, b.y);
-  ctx.rotate(angle);
-
-  // glow
-  ctx.shadowColor = col;
-  ctx.shadowBlur  = 6;
-
-  ctx.beginPath();
-  ctx.moveTo(size * 1.4, 0);
-  ctx.lineTo(-size * 0.8,  size * 0.55);
-  ctx.lineTo(-size * 0.45, 0);
-  ctx.lineTo(-size * 0.8, -size * 0.55);
-  ctx.closePath();
-
-  ctx.fillStyle   = colDim;
-  ctx.strokeStyle = col;
-  ctx.lineWidth   = 1;
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.shadowBlur = 0;
-  ctx.restore();
-}
-
-// ─── DRAW PREDATOR ────────────────────────────────────────
-function drawPred(p, size) {
-  const angle = Math.atan2(p.vy, p.vx);
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(angle);
-
-  ctx.shadowColor = '#ff4400';
-  ctx.shadowBlur  = 16;
-
-  const s = size * 1.8;
-  ctx.beginPath();
-  ctx.moveTo(s * 1.4, 0);
-  ctx.lineTo(-s * 0.8,  s * 0.6);
-  ctx.lineTo(-s * 0.4,  0);
-  ctx.lineTo(-s * 0.8, -s * 0.6);
-  ctx.closePath();
-
-  ctx.fillStyle   = 'rgba(255,68,0,0.25)';
-  ctx.strokeStyle = '#ff6622';
-  ctx.lineWidth   = 1.5;
-  ctx.fill();
-  ctx.stroke();
-
-  // inner eye
-  ctx.beginPath();
-  ctx.arc(s * 0.5, 0, 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = '#ff4400';
-  ctx.fill();
-
-  ctx.shadowBlur = 0;
-  ctx.restore();
-}
-
-// ─── UPDATE ───────────────────────────────────────────────
-const TRAIL_LEN = 12;
-
-function update() {
-  buildGrid();
-
-  for (let i = 0; i < boids.length; i++) {
-    const b = boids[i];
-
-    // Save trail
-    if (cfg.trail) {
-      b.trail.push({ x: b.x, y: b.y });
-      if (b.trail.length > TRAIL_LEN) b.trail.shift();
-    } else {
-      b.trail.length = 0;
-    }
-
-    const neighbors = getNeighbors(b, cfg.rad);
-    const near      = neighbors.filter(n => {
-      const ex = n.x - b.x, ey = n.y - b.y;
-      return ex*ex + ey*ey < cfg.srad * cfg.srad && n !== b;
-    });
-
-    let sx=0,sy=0, ax=0,ay=0, cx=0,cy=0;
-    let sepCount=0, nCount=0;
-
-    for (const n of neighbors) {
-      if (n === b) continue;
-      nCount++;
-      ax += n.vx; ay += n.vy;
-      cx += n.x;  cy += n.y;
-    }
-    for (const n of near) {
-      const dx = b.x - n.x, dy = b.y - n.y;
-      const d = Math.hypot(dx, dy) || 0.001;
-      sx += dx / d; sy += dy / d;
-      sepCount++;
-    }
-
-    // Apply rules
-    const maxF = 0.15;
-    if (sepCount > 0) {
-      sx /= sepCount; sy /= sepCount;
-      const sm = Math.hypot(sx,sy)||1;
-      b.vx += (sx/sm * cfg.speed - b.vx) * 0.08 * cfg.sep;
-      b.vy += (sy/sm * cfg.speed - b.vy) * 0.08 * cfg.sep;
-    }
-    if (nCount > 0) {
-      ax /= nCount; ay /= nCount;
-      const am = Math.hypot(ax,ay)||1;
-      b.vx += (ax/am * cfg.speed - b.vx) * 0.05 * cfg.ali;
-      b.vy += (ay/am * cfg.speed - b.vy) * 0.05 * cfg.ali;
-
-      cx /= nCount; cy /= nCount;
-      const cdx = cx - b.x, cdy = cy - b.y;
-      const cm = Math.hypot(cdx,cdy)||1;
-      b.vx += (cdx/cm * cfg.speed - b.vx) * 0.04 * cfg.coh;
-      b.vy += (cdy/cm * cfg.speed - b.vy) * 0.04 * cfg.coh;
-    }
-
-    // Predator avoidance
-    if (cfg.predOn) {
-      const pdx = b.x - pred.x, pdy = b.y - pred.y;
-      const pd  = Math.hypot(pdx, pdy);
-      if (pd < cfg.pfear && pd > 0) {
-        const strength = (1 - pd / cfg.pfear) * 0.5;
-        b.vx += (pdx/pd) * cfg.speed * strength;
-        b.vy += (pdy/pd) * cfg.speed * strength;
-      }
-    }
-
-    // Mouse force
-    if (mouse.inside && cfg.mouseMode !== 'none') {
-      const mdx = mouse.x - b.x, mdy = mouse.y - b.y;
-      const md  = Math.hypot(mdx, mdy);
-      const mr  = 120;
-      if (md < mr && md > 0) {
-        const strength = (1 - md / mr) * 0.12 * cfg.mforce;
-        const sign     = cfg.mouseMode === 'attract' ? 1 : -1;
-        b.vx += (mdx/md) * strength * sign;
-        b.vy += (mdy/md) * strength * sign;
-      }
-    }
-
-    // Speed clamp
-    const spd = Math.hypot(b.vx, b.vy);
-    b.speed = spd;
-    if (spd > cfg.speed) {
-      b.vx = b.vx/spd * cfg.speed;
-      b.vy = b.vy/spd * cfg.speed;
-    } else if (spd < cfg.speed * 0.3) {
-      const a = Math.random() * Math.PI * 2;
-      b.vx += Math.cos(a) * 0.1;
-      b.vy += Math.sin(a) * 0.1;
-    }
-
-    // Bounce walls
-    const margin = 15;
-    const turnF  = 0.4;
-    if (b.x < margin)     b.vx += turnF;
-    if (b.x > W - margin) b.vx -= turnF;
-    if (b.y < margin)     b.vy += turnF;
-    if (b.y > H - margin) b.vy -= turnF;
-
-    b.x += b.vx;
-    b.y += b.vy;
-
-    // Hard clamp
-    b.x = Math.max(2, Math.min(W-2, b.x));
-    b.y = Math.max(2, Math.min(H-2, b.y));
-  }
-
-  // ─ Update predator ─
-  if (cfg.predOn) {
-    // Save trail
-    pred.trail.push({ x: pred.x, y: pred.y });
-    if (pred.trail.length > 18) pred.trail.shift();
-
-    // Pursue nearest boid
-    let nearestD = Infinity, nearestB = null;
-    for (const b of boids) {
-      const d = (b.x-pred.x)**2 + (b.y-pred.y)**2;
-      if (d < nearestD) { nearestD = d; nearestB = b; }
-    }
-    if (nearestB) {
-      const dx = nearestB.x - pred.x, dy = nearestB.y - pred.y;
-      const d  = Math.hypot(dx, dy) || 1;
-      pred.vx += (dx/d * cfg.pspeed - pred.vx) * 0.06;
-      pred.vy += (dy/d * cfg.pspeed - pred.vy) * 0.06;
-    }
-
-    // Clamp
-    const ps = Math.hypot(pred.vx, pred.vy);
-    if (ps > cfg.pspeed) {
-      pred.vx = pred.vx/ps * cfg.pspeed;
-      pred.vy = pred.vy/ps * cfg.pspeed;
-    }
-
-    // Bounce
-    if (pred.x < 15 || pred.x > W-15) pred.vx *= -1;
-    if (pred.y < 15 || pred.y > H-15) pred.vy *= -1;
-    pred.x = Math.max(2, Math.min(W-2, pred.x + pred.vx));
-    pred.y = Math.max(2, Math.min(H-2, pred.y + pred.vy));
-  } else {
-    pred.trail.length = 0;
-  }
-}
-
-// ─── DRAW ─────────────────────────────────────────────────
-function draw() {
-  // Fade trail (background rect with alpha)
-  ctx.fillStyle = `rgba(10,10,8,${cfg.fade})`;
-  ctx.fillRect(0, 0, W, H);
-
-  // Draw trails
-  if (cfg.trail) {
-    for (const b of boids) {
-      if (b.trail.length < 2) continue;
-      const speed = Math.hypot(b.vx, b.vy);
-      ctx.beginPath();
-      ctx.moveTo(b.trail[0].x, b.trail[0].y);
-      for (let t = 1; t < b.trail.length; t++) {
-        ctx.lineTo(b.trail[t].x, b.trail[t].y);
-      }
-      ctx.strokeStyle = velColor(speed, cfg.speed * 1.5, 0.18);
-      ctx.lineWidth   = 1;
-      ctx.stroke();
-    }
-    // Pred trail
-    if (cfg.predOn && pred.trail.length > 1) {
-      ctx.beginPath();
-      ctx.moveTo(pred.trail[0].x, pred.trail[0].y);
-      for (let t = 1; t < pred.trail.length; t++) {
-        ctx.lineTo(pred.trail[t].x, pred.trail[t].y);
-      }
-      ctx.strokeStyle = 'rgba(255,68,0,0.2)';
-      ctx.lineWidth   = 1.5;
-      ctx.stroke();
-    }
-  }
-
-  // Vision radius debug
-  if (cfg.radius) {
-    ctx.strokeStyle = 'rgba(200,255,0,0.06)';
-    ctx.lineWidth   = 0.5;
-    for (const b of boids) {
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, cfg.rad, 0, Math.PI*2);
-      ctx.stroke();
-    }
-  }
-
-  // Draw boids
-  for (const b of boids) drawBoid(b, cfg.size);
-
-  // Draw predator
-  if (cfg.predOn) {
-    // Fear radius ring
-    ctx.beginPath();
-    ctx.arc(pred.x, pred.y, cfg.pfear, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,68,0,0.06)';
-    ctx.lineWidth   = 1;
-    ctx.stroke();
-    drawPred(pred, cfg.size);
-  }
-
-  // Mouse cursor indicator
-  if (mouse.inside && cfg.mouseMode !== 'none') {
-    const col = cfg.mouseMode === 'attract' ? '#00d4ff' : '#ff4400';
-    ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, 120, 0, Math.PI*2);
-    ctx.strokeStyle = col.replace(')', ',0.15)').replace('rgb','rgba').replace('#00d4ff','rgba(0,212,255,0.15)').replace('#ff4400','rgba(255,68,0,0.15)');
-    ctx.strokeStyle = cfg.mouseMode === 'attract' ? 'rgba(0,212,255,0.12)' : 'rgba(255,68,0,0.12)';
-    ctx.lineWidth   = 1;
-    ctx.stroke();
-    // cross
-    ctx.strokeStyle = cfg.mouseMode === 'attract' ? 'rgba(0,212,255,0.5)' : 'rgba(255,68,0,0.5)';
-    ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.moveTo(mouse.x-8,mouse.y); ctx.lineTo(mouse.x+8,mouse.y); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(mouse.x,mouse.y-8); ctx.lineTo(mouse.x,mouse.y+8); ctx.stroke();
-  }
-}
-
-// ─── STATS ────────────────────────────────────────────────
-let fps = 0, frames = 0, lastFPSTime = performance.now();
-
-function updateStats() {
-  frames++;
-  const now = performance.now();
-  if (now - lastFPSTime > 500) {
-    fps = Math.round(frames / ((now - lastFPSTime) / 1000));
-    frames = 0; lastFPSTime = now;
-    document.getElementById('st-fps').textContent   = fps;
-    document.getElementById('st-count').textContent = boids.length;
-
-    let totalSpd = 0;
-    for (const b of boids) totalSpd += b.speed;
-    document.getElementById('st-vel').textContent = (totalSpd / boids.length).toFixed(1);
-    document.getElementById('st-clusters').textContent = estimateClusters();
-  }
-}
-
-function estimateClusters() {
-  // rough cluster count via grid density
-  let peaks = 0;
-  const csize = cfg.rad * 1.2;
-  const counts = new Map();
-  for (const b of boids) {
-    const k = Math.floor(b.x/csize) + ',' + Math.floor(b.y/csize);
-    counts.set(k, (counts.get(k)||0) + 1);
-  }
-  for (const v of counts.values()) if (v >= 3) peaks++;
-  return peaks;
-}
-
-// ─── LOOP ─────────────────────────────────────────────────
-function loop() {
-  update();
-  draw();
-  updateStats();
-  requestAnimationFrame(loop);
-}
-loop();
-
-// ─── CONTROLS ─────────────────────────────────────────────
-function bindSlider(id, key, valId, decimals=1) {
-  const el = document.getElementById(id);
-  const vl = document.getElementById(valId);
-  el.addEventListener('input', () => {
-    cfg[key] = parseFloat(el.value);
-    vl.textContent = parseFloat(el.value).toFixed(decimals);
-  });
-}
-
-bindSlider('s-count',  'count',  'v-count',  0);
-bindSlider('s-speed',  'speed',  'v-speed',  1);
-bindSlider('s-size',   'size',   'v-size',   0);
-bindSlider('s-sep',    'sep',    'v-sep',    2);
-bindSlider('s-ali',    'ali',    'v-ali',    2);
-bindSlider('s-coh',    'coh',    'v-coh',    2);
-bindSlider('s-rad',    'rad',    'v-rad',    0);
-bindSlider('s-srad',   'srad',   'v-srad',   0);
-bindSlider('s-pspeed', 'pspeed', 'v-pspeed', 1);
-bindSlider('s-pfear',  'pfear',  'v-pfear',  0);
-bindSlider('s-mforce', 'mforce', 'v-mforce', 1);
-bindSlider('s-fade',   'fade',   'v-fade',   2);
-
-// Count change → reinit
-document.getElementById('s-count').addEventListener('change', () => {
-  cfg.count = parseInt(document.getElementById('s-count').value);
-  initBoids();
-});
-
-// Toggles
-document.getElementById('t-pred').addEventListener('change', e => {
-  cfg.predOn = e.target.checked;
-  if (!cfg.predOn) pred.trail.length = 0;
-});
-document.getElementById('t-trail').addEventListener('change', e => {
-  cfg.trail = e.target.checked;
-  if (!cfg.trail) boids.forEach(b => b.trail.length = 0);
-});
-document.getElementById('t-radius').addEventListener('change', e => {
-  cfg.radius = e.target.checked;
-});
-
-// Mouse mode buttons
-document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    cfg.mouseMode = btn.dataset.mode;
-    const hud = document.getElementById('mouse-mode-hud');
-    if (cfg.mouseMode === 'none') {
-      hud.textContent = '';
-    } else {
-      hud.textContent = `[ MOUSE: ${cfg.mouseMode.toUpperCase()} ]`;
-    }
-  });
-});
-
-// Reset
-document.getElementById('btn-reset').addEventListener('click', () => {
-  initBoids();
-});
-</script>
-</body>
+
+        <script>
+            // ─── UTILS ────────────────────────────────────────────────
+            class Vec2 {
+                constructor(x = 0, y = 0) {
+                    this.x = x;
+                    this.y = y;
+                }
+                set(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    return this;
+                }
+                copy(v) {
+                    this.x = v.x;
+                    this.y = v.y;
+                    return this;
+                }
+                add(v) {
+                    this.x += v.x;
+                    this.y += v.y;
+                    return this;
+                }
+                sub(v) {
+                    this.x -= v.x;
+                    this.y -= v.y;
+                    return this;
+                }
+                mul(s) {
+                    this.x *= s;
+                    this.y *= s;
+                    return this;
+                }
+                div(s) {
+                    if (s !== 0) {
+                        this.x /= s;
+                        this.y /= s;
+                    }
+                    return this;
+                }
+                magSq() {
+                    return this.x * this.x + this.y * this.y;
+                }
+                mag() {
+                    return Math.sqrt(this.magSq());
+                }
+                normalize() {
+                    const m = this.mag();
+                    if (m > 0) this.div(m);
+                    return this;
+                }
+                limit(max) {
+                    const mSq = this.magSq();
+                    if (mSq > max * max) {
+                        this.div(Math.sqrt(mSq)).mul(max);
+                    }
+                    return this;
+                }
+                distSq(v) {
+                    let dx = this.x - v.x,
+                        dy = this.y - v.y;
+                    if (cfg.toroidal) {
+                        if (Math.abs(dx) > W / 2) dx = dx > 0 ? dx - W : dx + W;
+                        if (Math.abs(dy) > H / 2) dy = dy > 0 ? dy - H : dy + H;
+                    }
+                    return dx * dx + dy * dy;
+                }
+            }
+
+            // ─── CONFIG ───────────────────────────────────────────────
+            let cfg = {
+                count: 200,
+                species: 1,
+                speed: 3.0,
+                size: 7,
+                sep: 1.5,
+                ali: 1.0,
+                coh: 1.0,
+                rad: 80,
+                srad: 30,
+                pcount: 1,
+                pspeed: 4.0,
+                pfear: 120,
+                mforce: 2.0,
+                fade: 0.08,
+                timeScale: 1.0,
+                paused: false,
+                trail: true,
+                trailLen: 12,
+                radius: false,
+                mouseMode: "none",
+                toroidal: false,
+            };
+
+            const presets = {
+                storm: {
+                    count: 400,
+                    speed: 6.0,
+                    sep: 2.5,
+                    ali: 2.0,
+                    coh: 2.0,
+                    rad: 120,
+                    pcount: 2,
+                    species: 1,
+                    toroidal: true,
+                },
+                lazy: {
+                    count: 150,
+                    speed: 1.5,
+                    sep: 1.0,
+                    ali: 0.5,
+                    coh: 0.8,
+                    rad: 60,
+                    pcount: 0,
+                    species: 2,
+                    toroidal: false,
+                },
+                chaos: {
+                    count: 300,
+                    speed: 5.0,
+                    sep: 4.5,
+                    ali: 0.2,
+                    coh: 0.1,
+                    rad: 150,
+                    pcount: 3,
+                    species: 4,
+                    toroidal: true,
+                },
+                swarm: {
+                    count: 250,
+                    speed: 3.5,
+                    sep: 1.5,
+                    ali: 1.2,
+                    coh: 1.5,
+                    rad: 80,
+                    pcount: 1,
+                    species: 1,
+                    toroidal: false,
+                },
+            };
+
+            // ─── CANVAS SETUP ─────────────────────────────────────────
+            const canvas = document.getElementById("c");
+            const ctx = canvas.getContext("2d");
+            let W, H;
+
+            function resize() {
+                const wrap = canvas.parentElement;
+                W = canvas.width = wrap.clientWidth;
+                H = canvas.height = wrap.clientHeight;
+            }
+            resize();
+            window.addEventListener("resize", resize);
+
+            // ─── ENTITIES ─────────────────────────────────────────────
+            let boids = [],
+                predators = [],
+                obstacles = [];
+
+            class Boid {
+                constructor() {
+                    this.pos = new Vec2(Math.random() * W, Math.random() * H);
+                    const a = Math.random() * Math.PI * 2;
+                    const s = cfg.speed * (0.6 + Math.random() * 0.8);
+                    this.vel = new Vec2(Math.cos(a) * s, Math.sin(a) * s);
+                    this.acc = new Vec2(0, 0);
+                    this.trail = [];
+                    this.speed = s;
+                    this.species = Math.floor(Math.random() * cfg.species);
+                }
+            }
+
+            function initSimulation() {
+                boids = [];
+                for (let i = 0; i < cfg.count; i++) boids.push(new Boid());
+                predators = [];
+                for (let i = 0; i < cfg.pcount; i++) {
+                    const a = Math.random() * Math.PI * 2;
+                    predators.push({
+                        pos: new Vec2(
+                            W / 2 + (Math.random() - 0.5) * 100,
+                            H / 2 + (Math.random() - 0.5) * 100,
+                        ),
+                        vel: new Vec2(
+                            Math.cos(a) * cfg.pspeed,
+                            Math.sin(a) * cfg.pspeed,
+                        ),
+                        trail: [],
+                    });
+                }
+            }
+            initSimulation();
+
+            // ─── UI HANDLERS ──────────────────────────────────────────
+            const panelToggle = document.getElementById("panel-toggle");
+            const app = document.getElementById("app");
+
+            panelToggle.addEventListener("click", () => {
+                app.classList.toggle("collapsed");
+                panelToggle.textContent = app.classList.contains("collapsed")
+                    ? "«"
+                    : "»";
+                setTimeout(resize, 400);
+            });
+
+            function syncUI() {
+                const map = {
+                    "s-count": "count",
+                    "s-species": "species",
+                    "s-speed": "speed",
+                    "s-sep": "sep",
+                    "s-ali": "ali",
+                    "s-coh": "coh",
+                    "s-rad": "rad",
+                    "s-pcount": "pcount",
+                    "s-pspeed": "pspeed",
+                    "s-time": "timeScale",
+                    "s-tlen": "trailLen",
+                    "s-fade": "fade",
+                };
+                for (let [id, key] of Object.entries(map)) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.value = cfg[key];
+                        const valEl = document.getElementById(
+                            id.replace("s-", "v-"),
+                        );
+                        if (valEl)
+                            valEl.textContent = cfg[key].toFixed(
+                                el.step.includes(".") ? 1 : 0,
+                            );
+                    }
+                }
+                document.getElementById("t-toroidal").checked = cfg.toroidal;
+                document.getElementById("t-trail").checked = cfg.trail;
+            }
+
+            function showToast(msg) {
+                const t = document.getElementById("toast");
+                t.textContent = msg;
+                t.classList.add("show");
+                setTimeout(() => t.classList.remove("show"), 2000);
+            }
+
+            document.querySelectorAll(".preset-btn").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    Object.assign(cfg, presets[btn.dataset.preset]);
+                    syncUI();
+                    initSimulation();
+                    showToast(
+                        `PRESET ${btn.dataset.preset.toUpperCase()} CARGADO`,
+                    );
+                });
+            });
+
+            document
+                .getElementById("btn-export")
+                .addEventListener("click", () => {
+                    navigator.clipboard
+                        .writeText(JSON.stringify(cfg, null, 2))
+                        .then(() => showToast("CONFIGURACIÓN COPIADA"));
+                });
+
+            document
+                .getElementById("btn-random")
+                .addEventListener("click", () => {
+                    cfg.speed = 1 + Math.random() * 6;
+                    cfg.sep = Math.random() * 4;
+                    cfg.ali = Math.random() * 3;
+                    cfg.coh = Math.random() * 3;
+                    cfg.rad = 40 + Math.random() * 160;
+                    cfg.pcount = Math.floor(Math.random() * 4);
+                    cfg.species = 1 + Math.floor(Math.random() * 4);
+                    cfg.toroidal = Math.random() > 0.5;
+                    syncUI();
+                    initSimulation();
+                    showToast("PARÁMETROS ALEATORIZADOS");
+                });
+
+            // ─── SPATIAL GRID ─────────────────────────────────────────
+            let grid = new Map();
+            let cellSize = 0;
+
+            function buildGrid() {
+                grid.clear();
+                cellSize = cfg.rad + 1;
+                for (let i = 0; i < boids.length; i++) {
+                    const b = boids[i];
+                    const k =
+                        (Math.floor(b.pos.x / cellSize) << 16) |
+                        (Math.floor(b.pos.y / cellSize) & 0xffff);
+                    if (!grid.has(k)) grid.set(k, []);
+                    grid.get(k).push(i);
+                }
+            }
+
+            function getNeighbors(b, radius) {
+                const res = [],
+                    cx = Math.floor(b.pos.x / cellSize),
+                    cy = Math.floor(b.pos.y / cellSize);
+                const range = Math.ceil(radius / cellSize),
+                    r2 = radius * radius;
+                for (let dx = -range; dx <= range; dx++) {
+                    for (let dy = -range; dy <= range; dy++) {
+                        let kx = cx + dx,
+                            ky = cy + dy;
+                        if (cfg.toroidal) {
+                            const gx = Math.ceil(W / cellSize),
+                                gy = Math.ceil(H / cellSize);
+                            kx = (kx + gx) % gx;
+                            ky = (ky + gy) % gy;
+                        }
+                        const cell = grid.get((kx << 16) | (ky & 0xffff));
+                        if (!cell) continue;
+                        for (const idx of cell) {
+                            const n = boids[idx];
+                            if (n !== b && b.pos.distSq(n.pos) < r2)
+                                res.push(n);
+                        }
+                    }
+                }
+                return res;
+            }
+
+            // ─── MOUSE ────────────────────────────────────────────────
+            const mouse = { pos: new Vec2(-9999, -9999), inside: false };
+            let isDrawingObs = false;
+
+            canvas.addEventListener("mousedown", () => {
+                if (cfg.mouseMode === "obstacle") isDrawingObs = true;
+                addObstacle(mouse.pos);
+            });
+            canvas.addEventListener("mouseup", () => (isDrawingObs = false));
+            canvas.addEventListener("mousemove", (e) => {
+                const r = canvas.getBoundingClientRect();
+                mouse.pos.set(
+                    (e.clientX - r.left) * (W / r.width),
+                    (e.clientY - r.top) * (H / r.height),
+                );
+                mouse.inside = true;
+                document.getElementById("coords").textContent =
+                    `X:${Math.floor(mouse.pos.x).toString().padStart(4, "0")} Y:${Math.floor(mouse.pos.y).toString().padStart(4, "0")}`;
+                document.getElementById("mouse-mode-hud").style.opacity =
+                    cfg.mouseMode !== "none" ? "1" : "0";
+                if (isDrawingObs) addObstacle(mouse.pos);
+            });
+
+            function addObstacle(pos) {
+                if (cfg.mouseMode !== "obstacle" || !mouse.inside) return;
+                if (
+                    obstacles.length === 0 ||
+                    obstacles[obstacles.length - 1].pos.distSq(pos) > 625
+                )
+                    obstacles.push({ pos: new Vec2(pos.x, pos.y), radius: 20 });
+            }
+
+            // ─── CORE LOGIC ───────────────────────────────────────────
+            function boidColor(s, speed, alpha) {
+                const hues = [80, 280, 40, 200];
+                return `hsla(${hues[s % 4]}, 90%, ${40 + Math.min(speed / cfg.speed, 1) * 20}%, ${alpha})`;
+            }
+
+            const tempVec = new Vec2();
+
+            function update() {
+                if (cfg.paused) return;
+                buildGrid();
+                const dt = cfg.timeScale;
+
+                boids.forEach((b) => {
+                    if (cfg.trail) {
+                        b.trail.push({ x: b.pos.x, y: b.pos.y });
+                        while (b.trail.length > cfg.trailLen) b.trail.shift();
+                    } else b.trail = [];
+
+                    const neighbors = getNeighbors(b, cfg.rad);
+                    let sep = new Vec2(),
+                        ali = new Vec2(),
+                        coh = new Vec2(),
+                        sCount = 0,
+                        aCount = 0,
+                        cCount = 0;
+
+                    neighbors.forEach((n) => {
+                        const d2 = b.pos.distSq(n.pos);
+                        if (n.species === b.species) {
+                            ali.add(n.vel);
+                            aCount++;
+                            coh.add(tempVec.copy(n.pos));
+                            cCount++;
+                        }
+                        if (d2 < cfg.srad * cfg.srad && d2 > 0) {
+                            let dx = b.pos.x - n.pos.x,
+                                dy = b.pos.y - n.pos.y;
+                            if (cfg.toroidal) {
+                                if (Math.abs(dx) > W / 2)
+                                    dx = dx > 0 ? dx - W : dx + W;
+                                if (Math.abs(dy) > H / 2)
+                                    dy = dy > 0 ? dy - H : dy + H;
+                            }
+                            tempVec.set(dx, dy).normalize().div(Math.sqrt(d2));
+                            if (n.species !== b.species) tempVec.mul(1.5);
+                            sep.add(tempVec);
+                            sCount++;
+                        }
+                    });
+
+                    if (sCount > 0)
+                        b.acc.add(
+                            sep
+                                .div(sCount)
+                                .normalize()
+                                .mul(cfg.speed)
+                                .sub(b.vel)
+                                .mul(0.08 * cfg.sep),
+                        );
+                    if (aCount > 0)
+                        b.acc.add(
+                            ali
+                                .div(aCount)
+                                .normalize()
+                                .mul(cfg.speed)
+                                .sub(b.vel)
+                                .mul(0.05 * cfg.ali),
+                        );
+                    if (cCount > 0) {
+                        coh.div(cCount).sub(b.pos);
+                        if (cfg.toroidal) {
+                            if (Math.abs(coh.x) > W / 2)
+                                coh.x = coh.x > 0 ? coh.x - W : coh.x + W;
+                            if (Math.abs(coh.y) > H / 2)
+                                coh.y = coh.y > 0 ? coh.y - H : coh.y + H;
+                        }
+                        b.acc.add(
+                            coh
+                                .normalize()
+                                .mul(cfg.speed)
+                                .sub(b.vel)
+                                .mul(0.04 * cfg.coh),
+                        );
+                    }
+
+                    predators.forEach((p) => {
+                        const d2 = b.pos.distSq(p.pos);
+                        if (d2 < cfg.pfear * cfg.pfear && d2 > 0) {
+                            let dx = b.pos.x - p.pos.x,
+                                dy = b.pos.y - p.pos.y;
+                            if (cfg.toroidal) {
+                                if (Math.abs(dx) > W / 2)
+                                    dx = dx > 0 ? dx - W : dx + W;
+                                if (Math.abs(dy) > H / 2)
+                                    dy = dy > 0 ? dy - H : dy + H;
+                            }
+                            b.acc.add(
+                                tempVec
+                                    .set(dx, dy)
+                                    .normalize()
+                                    .mul(
+                                        cfg.speed *
+                                            0.6 *
+                                            (1 - Math.sqrt(d2) / cfg.pfear),
+                                    ),
+                            );
+                        }
+                    });
+
+                    obstacles.forEach((o) => {
+                        const d2 = b.pos.distSq(o.pos),
+                            r = o.radius + cfg.rad * 0.5;
+                        if (d2 < r * r && d2 > 0)
+                            b.acc.add(
+                                tempVec
+                                    .copy(b.pos)
+                                    .sub(o.pos)
+                                    .normalize()
+                                    .mul(
+                                        cfg.speed *
+                                            1.5 *
+                                            (1 - Math.sqrt(d2) / r),
+                                    ),
+                            );
+                    });
+
+                    if (
+                        mouse.inside &&
+                        (cfg.mouseMode === "attract" ||
+                            cfg.mouseMode === "repel")
+                    ) {
+                        const d2 = b.pos.distSq(mouse.pos);
+                        if (d2 < 14400 && d2 > 0)
+                            b.acc.add(
+                                tempVec
+                                    .copy(mouse.pos)
+                                    .sub(b.pos)
+                                    .normalize()
+                                    .mul(
+                                        0.12 *
+                                            cfg.mforce *
+                                            (1 - Math.sqrt(d2) / 120) *
+                                            (cfg.mouseMode === "attract"
+                                                ? 1
+                                                : -1),
+                                    ),
+                            );
+                    }
+
+                    b.vel.add(tempVec.copy(b.acc).mul(dt)).limit(cfg.speed);
+                    if (b.vel.magSq() < 0.5)
+                        b.vel.add(
+                            tempVec
+                                .set(Math.random() - 0.5, Math.random() - 0.5)
+                                .mul(0.2 * dt),
+                        );
+
+                    if (!cfg.toroidal) {
+                        const m = 15,
+                            f = 0.4 * dt;
+                        if (b.pos.x < m) b.vel.x += f;
+                        if (b.pos.x > W - m) b.vel.x -= f;
+                        if (b.pos.y < m) b.vel.y += f;
+                        if (b.pos.y > H - m) b.vel.y -= f;
+                    }
+
+                    b.pos.add(tempVec.copy(b.vel).mul(dt));
+                    if (cfg.toroidal) {
+                        b.pos.x = (b.pos.x + W) % W;
+                        b.pos.y = (b.pos.y + H) % H;
+                    } else {
+                        b.pos.x = Math.max(2, Math.min(W - 2, b.pos.x));
+                        b.pos.y = Math.max(2, Math.min(H - 2, b.pos.y));
+                    }
+                    b.acc.set(0, 0);
+                    b.speed = b.vel.mag();
+                });
+
+                predators.forEach((p) => {
+                    if (cfg.trail) {
+                        p.trail.push({ x: p.pos.x, y: p.pos.y });
+                        if (p.trail.length > 18) p.trail.shift();
+                    } else p.trail = [];
+                    let nearD2 = Infinity,
+                        nearB = null;
+                    boids.forEach((b) => {
+                        const d2 = p.pos.distSq(b.pos);
+                        if (d2 < nearD2) {
+                            nearD2 = d2;
+                            nearB = b;
+                        }
+                    });
+                    if (nearB) {
+                        let dx = nearB.pos.x - p.pos.x,
+                            dy = nearB.pos.y - p.pos.y;
+                        if (cfg.toroidal) {
+                            if (Math.abs(dx) > W / 2)
+                                dx = dx > 0 ? dx - W : dx + W;
+                            if (Math.abs(dy) > H / 2)
+                                dy = dy > 0 ? dy - H : dy + H;
+                        }
+                        p.vel.add(
+                            tempVec
+                                .set(dx, dy)
+                                .normalize()
+                                .mul(cfg.pspeed)
+                                .sub(p.vel)
+                                .mul(0.06 * dt),
+                        );
+                    }
+                    obstacles.forEach((o) => {
+                        const d2 = p.pos.distSq(o.pos),
+                            r = o.radius + 20;
+                        if (d2 < r * r && d2 > 0)
+                            p.vel.add(
+                                tempVec
+                                    .copy(p.pos)
+                                    .sub(o.pos)
+                                    .normalize()
+                                    .mul(
+                                        cfg.pspeed *
+                                            1.5 *
+                                            (1 - Math.sqrt(d2) / r),
+                                    ),
+                            );
+                    });
+                    p.vel.limit(cfg.pspeed);
+                    p.pos.add(tempVec.copy(p.vel).mul(dt));
+                    if (cfg.toroidal) {
+                        p.pos.x = (p.pos.x + W) % W;
+                        p.pos.y = (p.pos.y + H) % H;
+                    } else {
+                        if (p.pos.x < 15 || p.pos.x > W - 15) p.vel.x *= -1;
+                        if (p.pos.y < 15 || p.pos.y > H - 15) p.vel.y *= -1;
+                        p.pos.x = Math.max(2, Math.min(W - 2, p.pos.x));
+                        p.pos.y = Math.max(2, Math.min(H - 2, p.pos.y));
+                    }
+                });
+            }
+
+            function draw() {
+                if (!cfg.paused) {
+                    ctx.fillStyle = `rgba(10,10,8,${cfg.fade})`;
+                    ctx.fillRect(0, 0, W, H);
+                }
+                obstacles.forEach((o) => {
+                    ctx.beginPath();
+                    ctx.arc(o.pos.x, o.pos.y, o.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(20,20,18,0.8)";
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+                    ctx.stroke();
+                });
+                boids.forEach((b) => {
+                    if (cfg.trail && b.trail.length > 1) {
+                        ctx.beginPath();
+                        ctx.moveTo(b.trail[0].x, b.trail[0].y);
+                        for (let i = 1; i < b.trail.length; i++) {
+                            // Don't draw line across toroidal jump
+                            if (
+                                Math.abs(b.trail[i].x - b.trail[i - 1].x) <
+                                    W / 2 &&
+                                Math.abs(b.trail[i].y - b.trail[i - 1].y) <
+                                    H / 2
+                            )
+                                ctx.lineTo(b.trail[i].x, b.trail[i].y);
+                            else ctx.moveTo(b.trail[i].x, b.trail[i].y);
+                        }
+                        ctx.strokeStyle = boidColor(b.species, b.speed, 0.18);
+                        ctx.stroke();
+                    }
+                    const a = Math.atan2(b.vel.y, b.vel.x),
+                        s = cfg.size,
+                        c = boidColor(b.species, b.speed, 1);
+                    ctx.save();
+                    ctx.translate(b.pos.x, b.pos.y);
+                    ctx.rotate(a);
+                    ctx.shadowColor = c;
+                    ctx.shadowBlur = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(s * 1.4, 0);
+                    ctx.lineTo(-s * 0.8, s * 0.55);
+                    ctx.lineTo(-s * 0.45, 0);
+                    ctx.lineTo(-s * 0.8, -s * 0.55);
+                    ctx.closePath();
+                    ctx.fillStyle = boidColor(b.species, b.speed, 0.3);
+                    ctx.strokeStyle = c;
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                });
+                predators.forEach((p) => {
+                    const a = Math.atan2(p.vel.y, p.vel.x),
+                        s = cfg.size * 1.8;
+                    ctx.save();
+                    ctx.translate(p.pos.x, p.pos.y);
+                    ctx.rotate(a);
+                    ctx.shadowColor = "#f40";
+                    ctx.shadowBlur = 16;
+                    ctx.beginPath();
+                    ctx.moveTo(s * 1.4, 0);
+                    ctx.lineTo(-s * 0.8, s * 0.6);
+                    ctx.lineTo(-s * 0.4, 0);
+                    ctx.lineTo(-s * 0.8, -s * 0.6);
+                    ctx.closePath();
+                    ctx.fillStyle = "rgba(255,68,0,0.25)";
+                    ctx.strokeStyle = "#f62";
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            }
+
+            // ─── LOOP ─────────────────────────────────────────────────
+            let frames = 0,
+                lastTime = performance.now();
+            function loop() {
+                update();
+                draw();
+                frames++;
+                const now = performance.now();
+                if (now - lastTime > 500) {
+                    document.getElementById("st-fps").textContent = Math.round(
+                        frames / ((now - lastTime) / 1000),
+                    );
+                    document.getElementById("st-count").textContent =
+                        boids.length;
+                    document.getElementById("st-obs").textContent =
+                        obstacles.length;
+                    let v = 0;
+                    boids.forEach((b) => (v += b.speed));
+                    document.getElementById("st-vel").textContent = (
+                        v / (boids.length || 1)
+                    ).toFixed(1);
+                    frames = 0;
+                    lastTime = now;
+                }
+                requestAnimationFrame(loop);
+            }
+            loop();
+
+            // ─── BINDINGS ──────────────────────────────────────────────
+            function bindSlider(id, key) {
+                const el = document.getElementById(id);
+                el.addEventListener("input", () => {
+                    cfg[key] = parseFloat(el.value);
+                    const valEl = document.getElementById(
+                        id.replace("s-", "v-"),
+                    );
+                    if (valEl)
+                        valEl.textContent = cfg[key].toFixed(
+                            el.step.includes(".") ? 1 : 0,
+                        );
+                    if (["count", "species", "pcount"].includes(key))
+                        initSimulation();
+                });
+            }
+            [
+                "count",
+                "species",
+                "speed",
+                "sep",
+                "ali",
+                "coh",
+                "rad",
+                "pcount",
+                "pspeed",
+                "time",
+                "tlen",
+                "fade",
+            ].forEach((k) => {
+                const cfgKey = { time: "timeScale", tlen: "trailLen" }[k] || k;
+                bindSlider("s-" + k, cfgKey);
+            });
+
+            document
+                .getElementById("t-toroidal")
+                .addEventListener(
+                    "change",
+                    (e) => (cfg.toroidal = e.target.checked),
+                );
+            document
+                .getElementById("t-trail")
+                .addEventListener(
+                    "change",
+                    (e) => (cfg.trail = e.target.checked),
+                );
+            document
+                .getElementById("btn-play")
+                .addEventListener("click", () => {
+                    cfg.paused = false;
+                    document.getElementById("btn-play").classList.add("active");
+                    document
+                        .getElementById("btn-pause")
+                        .classList.remove("active");
+                });
+            document
+                .getElementById("btn-pause")
+                .addEventListener("click", () => {
+                    cfg.paused = true;
+                    document
+                        .getElementById("btn-pause")
+                        .classList.add("active");
+                    document
+                        .getElementById("btn-play")
+                        .classList.remove("active");
+                });
+            document.querySelectorAll(".mode-btn[data-mode]").forEach((b) =>
+                b.addEventListener("click", () => {
+                    document
+                        .querySelectorAll(".mode-btn[data-mode]")
+                        .forEach((x) => x.classList.remove("active"));
+                    b.classList.add("active");
+                    cfg.mouseMode = b.dataset.mode;
+                    document.getElementById("mouse-mode-hud").textContent =
+                        `[ MOUSE: ${cfg.mouseMode.toUpperCase()} ]`;
+                }),
+            );
+            document
+                .getElementById("btn-clear-obs")
+                .addEventListener("click", () => (obstacles = []));
+            document
+                .getElementById("btn-reset")
+                .addEventListener("click", () => {
+                    initSimulation();
+                    obstacles = [];
+                });
+        </script>
+    </body>
 </html>
